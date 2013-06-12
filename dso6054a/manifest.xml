@@ -1,0 +1,16 @@
+<package>
+  <description brief="dso6054a">
+
+     dso6054a
+
+  </description>
+  <author>Derek King</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/dso6054a</url>
+  <depend package="rospy"/>
+  <depend package="scpi_lxi"/>
+
+</package>
+
+

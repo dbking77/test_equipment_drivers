@@ -1,0 +1,16 @@
+<package>
+  <description brief="omega_hh147">
+
+     omega_hh147
+
+  </description>
+  <author>Derek King</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/omega_hh147</url>
+  <depend package="rospy"/>
+  <depend package="std_msgs"/>
+
+</package>
+
+

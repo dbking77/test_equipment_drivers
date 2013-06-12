@@ -1,0 +1,9 @@
+<stack>
+  <description brief="test_equipment_drivers">ROS drivers for various test equipment</description>
+  <author>Maintained by Derek King</author>
+  <license>BSD</license>  
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/does_not_exist</url>
+  <depend stack="ros" />
+
+</stack>
