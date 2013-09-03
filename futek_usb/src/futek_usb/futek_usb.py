@@ -58,7 +58,7 @@ class FutekUSB210:
         self.error = ''
         self.last_error = ''
         
-    def getValue():
+    def getValue(self):
         return self.value
 
     def setCallback(self, callback_func):
@@ -106,17 +106,22 @@ class FutekUSB210:
             raise RuntimeError("Cannot convert '%s' to float" % data[0])
         return value
                 
+zero = None
 def callback(value):
-    print(value)
+    global zero
+    if zero is None:
+        zero = value
+    print(value, value-zero)
 
 
 if __name__ == '__main__':    
     import sys
     sensor = FutekUSB210(sys.argv[1])
     sensor.setCallback(callback)
-    sensor.startReadLoopInThread() #readLoop()
+    #sensor.startReadLoopInThread() 
+    sensor.readLoop()
     #print(sensor.read())
-    time.sleep(10)
-    sensor.stop()
-    print("done")
+    #time.sleep(10)
+    #sensor.stop()
+    #print("done")
     
