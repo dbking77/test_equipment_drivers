@@ -171,25 +171,55 @@ def main():
     mosfet_voltage = supply_voltage- pylab.array(voltage) 
     power = current * mosfet_voltage
     
-    t = pylab.arange(len(voltage)) * xinc * 1e3
+    t = pylab.arange(len(voltage)) * xinc
+    t_ms = t * 1e3
+
+    charge = [0.0]
+    for c in current:
+      charge.append(charge[-1]+c*xinc)
+    charge = pylab.array(charge[1:])
+    # find first point where voltage ~= supply voltage
+    voltage_up_index = None
+    for i,v in enumerate(voltage):
+      if supply_voltage - v < 0.1:
+        voltage_up_index = i
+        break
+    capacitance = charge[i] / supply_voltage
+    if voltage_up_index is not None:
+      capacitance = charge[i] / supply_voltage
+      print("Estimated capacitance %0.1fuF" % (capacitance * 1e6))
+    else:
+      capacitance = charge[i] / supply_voltage
+      print("Cannot accurrately estimate capacitance because voltage did not come up") 
+      print("Minimum estimated capacitance %0.1fuF" % (capacitance * 1e6))
+
     
     pylab.figure()
     pylab.subplot(3,1,1)
-    pylab.plot(t,current)
+    pylab.plot(t_ms,current)
     pylab.xlabel('time (ms)')
     pylab.ylabel('current (A)')
     pylab.subplot(3,1,2)
-    pylab.plot(t,mosfet_voltage, label='mosfet voltage drop')
-    pylab.plot(t,voltage, label='supply voltage')
+    pylab.plot(t_ms,mosfet_voltage, label='mosfet voltage drop')
+    pylab.plot(t_ms,voltage, label='supply voltage')
     pylab.xlabel('time (ms)')
     pylab.ylabel('voltage (V)')
     pylab.legend()
     pylab.subplot(3,1,3)
-    pylab.plot(t,power)
+    pylab.plot(t_ms,power)
     pylab.xlabel('time (ms)')
-    pylab.ylabel('power (Watt)')
-    pylab.show()
+    pylab.ylabel('power (Watt)')    
+
+    pylab.figure()
+    pylab.xlabel('time (ms)')
+    pylab.ylabel('charge (Columbs)')
+    pylab.plot(t_ms,charge)
+    if voltage_up_index is not None:
+      pylab.plot(t_ms[voltage_up_index],charge[voltage_up_index],'r*')
+      
     
+
+    pylab.show()
 
     # print 'x-inc', r(':waveform:xincrement?')
     # print 'y-inc', r(':waveform:yincrement?')
