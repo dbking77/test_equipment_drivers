@@ -1,1 +1,0 @@
-""" SCPI LXI driver module """

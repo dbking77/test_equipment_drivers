@@ -3,6 +3,7 @@
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2008, Willow Garage, Inc.
+# Copyright (c) 2015, Fetch Robotics, Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,7 +36,8 @@
 
 
 ##\author Derek King
-##\brief Interface to Prologix GPIB-Ethernet controller
+##\brief Reads voltage and current measurements from DSO scope to determine power
+##        disapation of hotswap FET. 
 
 """
 Grabs current and voltage data from oscilliscope, and plots power over hotswap mosfet
@@ -56,25 +58,20 @@ Example:
 
 """
 
-PKG = 'dso6054a'
-
-import roslib; roslib.load_manifest(PKG)
-import rospy
-
-from scpi_lxi.scpi_lxi import LXIDevice
-from dso6054a.dso6054a import DSO6054A
-
-import re
 import sys
-
+import getopt
+import re
 import pylab
+import time
+
+from scpi_lxi import LXIDevice
+from dso6054a import DSO6054A
 
 def usage(progname):
-  print __doc__ % vars()
+    print __doc__ % vars()
 
 def main():
     progname = sys.argv[0]
-    import getopt
     optlist,argv = getopt.gnu_getopt(sys.argv[1:], "h");    
 
     dev = None
@@ -87,81 +84,15 @@ def main():
             return 2
 
     if len(argv) != 2:
-      usage(progname)
-      return 1
+        usage(progname)
+        return 1
 
     address = argv[0]
     supply_voltage = float(argv[1])
 
     print "Connecting to LXI device using network address %s" % address
     dev = LXIDevice(address)
-    scope = DSO6054A(dev)    
-    
-    #def.write("*RST")
-
-
-    if False:
-
-        w = dev.write
-        r = dev.read
-
-        w("*IDN?")
-        idn = r()
-        print idn
-        #'AGILENT TECHNOLOGIES,DSO6054A,MY44008014,04.10.0239'
-        if not re.match('AGILENT TECHNOLOGIES,DSO6054A',idn):
-            print "Bad indentification : ", idn
-
-        #w(":digitize channel2")
-
-        w(":waveform:format ascii")
-        w(":waveform:format?")
-        print 'format:', r()
-
-        w(":waveform:source channel2")
-        w(":waveform:source?")
-        print 'source:', r()
-
-        w(":waveform:points:mode normal")
-        w(":waveform:points 100")
-        w(":waveform:points?")
-        print 'points:', r()   
-
-        w(":waveform:points:mode?")
-        print 'pointsmode:', r()
-
-        pre = r('waveform:preamble?')
-        format,typ,points,count,xinc,xorg,xref,yinc,yorg,yref = pre.split(',')
-        print "preamble", 
-
-        xinc = float(xinc)
-
-        print 'format', format
-        print 'type', typ
-        print 'points', points
-        print 'count', count
-        print 'xinc', xinc
-        print 'xorg', xorg
-        print 'xref', xref
-        print 'yinc', yinc
-        print 'yorg', yorg
-        print 'yref', yref
-
-
-        print r()
-        data = r(':waveform:data?')
-        hdr = data[0:2]
-        if hdr != "#8":
-            print "Warning, Unexpected data header", hdr
-        size = int(data[2:10])
-        data = data[10:]
-        if size != len(data)-1:
-            print "Warning : data length mismatch"
-
-        # break data into array of floats
-        data = [float(d) for d in data.split(',')]
-        #print len(data)
-        #print data
+    scope = DSO6054A(dev)
 
     samples = 1000
     xinc,voltage = scope.read_waveform(1, samples)
@@ -176,22 +107,22 @@ def main():
 
     charge = [0.0]
     for c in current:
-      charge.append(charge[-1]+c*xinc)
+        charge.append(charge[-1]+c*xinc)
     charge = pylab.array(charge[1:])
     # find first point where voltage ~= supply voltage
     voltage_up_index = None
     for i,v in enumerate(voltage):
-      if supply_voltage - v < 0.1:
-        voltage_up_index = i
-        break
+        if supply_voltage - v < 0.1:
+            voltage_up_index = i
+            break
     capacitance = charge[i] / supply_voltage
     if voltage_up_index is not None:
-      capacitance = charge[i] / supply_voltage
-      print("Estimated capacitance %0.1fuF" % (capacitance * 1e6))
+        capacitance = charge[i] / supply_voltage
+        print("Estimated capacitance %0.1fuF" % (capacitance * 1e6))
     else:
-      capacitance = charge[i] / supply_voltage
-      print("Cannot accurrately estimate capacitance because voltage did not come up") 
-      print("Minimum estimated capacitance %0.1fuF" % (capacitance * 1e6))
+        capacitance = charge[i] / supply_voltage
+        print("Cannot accurrately estimate capacitance because voltage did not come up") 
+        print("Minimum estimated capacitance %0.1fuF" % (capacitance * 1e6))
 
     
     pylab.figure()
@@ -215,17 +146,9 @@ def main():
     pylab.ylabel('charge (Columbs)')
     pylab.plot(t_ms,charge)
     if voltage_up_index is not None:
-      pylab.plot(t_ms[voltage_up_index],charge[voltage_up_index],'r*')
+        pylab.plot(t_ms[voltage_up_index],charge[voltage_up_index],'r*')
       
-    
-
     pylab.show()
-
-    # print 'x-inc', r(':waveform:xincrement?')
-    # print 'y-inc', r(':waveform:yincrement?')
-    
-    # print 'y-origin', r(':waveform:yorigin?')
-    # print 'y-ref', r(':waveform:yreference?')
     
     
     
