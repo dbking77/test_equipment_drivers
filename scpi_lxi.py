@@ -70,71 +70,74 @@ import traceback
 import socket
 import sys
 import re
+import time
 
 def usage(progname):
-  print __doc__ % vars()
+    print __doc__ % vars()
 
 
 # Interface to LXI device. 
 class LXIDevice:
-  def __init__(self, address):
-    try :
-      sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      port = 5025
-      sock.connect((address, port))
-    except socket.error :
-      raise RuntimeError("Error making connection to LXI device with address '%s'" %  address)
-    self._sock = sock
-    self._timeout = 0.5
-    msg = self._flush()
-    if msg:
-      print "Warning, flushed : ", msg
+    def __init__(self, address):
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            port = 5025
+            sock.connect((address, port))
+        except socket.error:
+            raise RuntimeError("Error making connection to LXI device with address '%s'" %  address)
+        self._sock = sock
+        self._timeout = 0.5
+        msg = self._flush()
+        if msg:
+            print "Warning, flushed : ", msg
 
-  def settimeout(self, timeout):
-    """ Set read timeout in seconds """ 
-    self._sock.settimeout(timeout)
-    self._timeout = timeout
-  
-  def _flush(self):
-    """ Clear any read buffers out """
-    self._sock.settimeout(0.1)
-    line = self.read()
-    result = ""
-    while line != None:
-      result += line
-      line = self._read()
-    self._sock.settimeout(self._timeout)
-    return result
+    def settimeout(self, timeout):
+        """ Set read timeout in seconds """ 
+        self._sock.settimeout(timeout)
+        self._timeout = timeout
 
-  def read(self, query=None):
-    """ Reads buffered response.  If query is not None will send query request before reading response"""
-    if query is not None:
-      self.write(query)
-    sock = self._sock
-    msg = ""
-    try:
-      while True:
-        msg += sock.recv(1024)
-        end = msg.find("\n")
-        if end == len(msg)-1:
-          return msg
-        elif end != -1:
-          print "Warning, dropping %d byte tail of message. Tail='%s'"%(len(msg)-end, msg[end:])
-          return msg[0:end-1]
-    except socket.timeout:
-      if len(msg) > 0:
-        raise RuntimeError("Got timeout after receiving partial result : %s" % msg)
-      else:
-        return None
+    def _flush(self):
+        """ Clear any read buffers out """
+        self._sock.settimeout(0.1)
+        line = self.read()
+        result = ""
+        while line != None:
+            result += line
+            line = self._read()
+        self._sock.settimeout(self._timeout)
+        return result
 
-  def write(self, line):
-    self._sock.sendall(line+'\n')
+    def read(self, query=None):
+        """ Reads buffered response.  If query is not None will send query request before reading response"""
+        if query is not None:
+            self.write(query)
+        sock = self._sock
+        msg = ""
+        try:
+            while True:
+                msg += self._sock.recv(500)
+                end = msg.find("\n")
+                if end == (len(msg)-1):
+                    return msg
+                elif end != -1:
+                    print "Warning, dropping %d byte tail of message. Tail='%s'"%(len(msg)-end, msg[end:])
+                    return msg[0:end-1]
+        except socket.timeout:
+            if len(msg) > 0:
+                raise RuntimeError("Got timeout after receiving partial result : %s" % msg)
+            else:
+                return None
+
+    def write(self, line):
+        self._sock.sendall(line+'\n')
         
 
 
 def main(argv):
-    progname = argv[0]
     import getopt
+    import readline
+
+    progname = argv[0]
     optlist,argv = getopt.gnu_getopt(argv[1:], "h");
 
     dev = None
@@ -147,24 +150,23 @@ def main(argv):
             return 2
 
     if len(argv) != 1:
-      usage(progname)
-      return 1
+        usage(progname)
+        return 1
 
     address = argv[0]
     print "Connecting to LXI device using network address %s" % address
     dev = LXIDevice(address) 
 
-    import readline
     line = raw_input("> ")
     while True:
         if line:
             dev.write(line)
         else:
-          result = dev.read()
-          if result != None:
-            print result
-          else:
-            print '<<< NO RESPONSE >>>'
+            result = dev.read()
+            if result != None:
+                print result
+            else:
+                print '<<< NO RESPONSE >>>'
         line = raw_input("> ")
 
 

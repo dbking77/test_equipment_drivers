@@ -7,6 +7,7 @@ class DSO6054A:
         self.dev = dev
         idn = dev.read("*IDN?")
         if idn is None:
+            print dev.read("*IDN?")
             raise RuntimeError("Device did not respond to identification request")
         if not re.match('AGILENT TECHNOLOGIES,DSO6054A',idn) and not re.match('AGILENT TECHNOLOGIES,DSO\-X 3034A',idn):
             raise RuntimeError("Bad indentification : ", idn)
@@ -35,9 +36,9 @@ class DSO6054A:
 
         w(":waveform:points %s" % samples)
 
-        pre = r('waveform:preamble?')
+        pre = r(':waveform:preamble?')
         if pre is None:
-            raise RuntimeError("No response from scope about waveform, is scope 'stopped'")
+            raise RuntimeError("No response from scope about waveform. Verify scope is 'stopped'.")
         format,typ,points,count,xinc,xorg,xref,yinc,yorg,yref = pre.split(',')
 
         if int(points) != samples:
@@ -47,14 +48,14 @@ class DSO6054A:
             #raise RuntimeError(msg)
 
         data = r(':waveform:data?')
-
+        
         hdr = data[0:2]
         size = int(data[2:10])
         data = data[10:]
         if hdr != "#8":
             raise RuntimeError("Unexpected data header" + hdr)
         if size != len(data)-1:
-            raise RuntimeError("Data length mismatch")
+            raise RuntimeError("Data length mismatch : size=%d, len(data)=%d" % (size, len(data)))
 
         data = [float(d) for d in data.split(',')]
         if len(data) != samples:
