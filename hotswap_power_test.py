@@ -58,6 +58,7 @@ Example:
 
 """
 
+from __future__ import print_function
 import sys
 import getopt
 import re
@@ -68,7 +69,7 @@ from scpi_lxi import LXIDevice
 from dso6054a import DSO6054A
 
 def usage(progname):
-    print __doc__ % vars()
+    print(__doc__ % vars())
 
 def main():
     progname = sys.argv[0]
@@ -80,7 +81,7 @@ def main():
             usage(progname)
             return 0
         else :
-            print "Internal error : opt = ", opt
+            print("Internal error : opt = ", opt)
             return 2
 
     if len(argv) != 2:
@@ -90,7 +91,7 @@ def main():
     address = argv[0]
     supply_voltage = float(argv[1])
 
-    print "Connecting to LXI device using network address %s" % address
+    print("Connecting to LXI device using network address %s" % address)
     dev = LXIDevice(address)
     scope = DSO6054A(dev)
 
@@ -98,7 +99,7 @@ def main():
     xinc,voltage = scope.read_waveform(1, samples)
     xinc,current = scope.read_waveform(4, samples)
 
-    print 'supply voltage = ', supply_voltage
+    print('supply voltage = ', supply_voltage)
     mosfet_voltage = supply_voltage- pylab.array(voltage) 
     power = current * mosfet_voltage
     
@@ -124,6 +125,22 @@ def main():
         print("Cannot accurrately estimate capacitance because voltage did not come up") 
         print("Minimum estimated capacitance %0.1fuF" % (capacitance * 1e6))
 
+    # Estimate turn-on time by looking at power waveform
+    power_mid = 0.5 * (max(power) + min(power))
+    power_high = list(power > power_mid)  # true if power if higher than mid point
+    rising = power_high.index(True)
+    try:
+        falling = power_high.index(False,rising+1)
+    except ValueError:
+        print("Couldn't find falling edge, assuming end for trace")
+        falling = len(power)-1
+    rising,falling = (t_ms[rising],t_ms[falling])
+    print("Turn-on time %.2f ms" % (falling-rising))
+    
+    # estimate power limit by looking at waveform    
+    power_limit = pylab.extract( (power>(0.95*max(power))) , power).mean()
+    print("Power limit seems to be %f Watts" % power_limit)
+
     
     pylab.figure()
     pylab.subplot(3,1,1)
@@ -137,7 +154,11 @@ def main():
     pylab.ylabel('voltage (V)')
     pylab.legend()
     pylab.subplot(3,1,3)
-    pylab.plot(t_ms,power)
+    pylab.plot(t_ms,power,'r')
+    pylab.plot([t_ms[0],t_ms[-1]],[power_mid,power_mid],'k--')
+    pylab.plot([rising,rising],[min(power),max(power)],'k--')
+    pylab.plot([falling,falling],[min(power),max(power)],'k--')
+    pylab.plot([t_ms[0],t_ms[-1]],[power_limit, power_limit],'b-.')
     pylab.xlabel('time (ms)')
     pylab.ylabel('power (Watt)')    
 
