@@ -86,7 +86,7 @@ class LXIDevice:
         except socket.error:
             raise RuntimeError("Error making connection to LXI device with address '%s'" %  address)
         self._sock = sock
-        self._timeout = 0.5
+        self._timeout = 20.5
         msg = self._flush()
         if msg:
             print "Warning, flushed : ", msg

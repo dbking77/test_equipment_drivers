@@ -130,7 +130,8 @@ def main():
     power_high = list(power > power_mid)  # true if power if higher than mid point
     rising = power_high.index(True)
     try:
-        falling = power_high.index(False,rising+1)
+        # find falling edge, but start at least 10uSec after rising edge
+        falling = power_high.index(False,rising+max(1, int(10e-6/xinc)))
     except ValueError:
         print("Couldn't find falling edge, assuming end for trace")
         falling = len(power)-1
@@ -139,7 +140,7 @@ def main():
     
     # estimate power limit by looking at waveform    
     power_limit = pylab.extract( (power>(0.95*max(power))) , power).mean()
-    print("Power limit seems to be %f Watts" % power_limit)
+    print("Power limit seems to be %.1f Watts" % power_limit)
 
     
     pylab.figure()
