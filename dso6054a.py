@@ -1,5 +1,6 @@
 """ functions for capturing data from oscilliscope """
 
+from __future__ import print_function
 import re
 
 class DSO6054A:
@@ -7,21 +8,23 @@ class DSO6054A:
         self.dev = dev
         idn = dev.read("*IDN?")
         if idn is None:
-            print dev.read("*IDN?")
+            print(dev.read("*IDN?"))
             raise RuntimeError("Device did not respond to identification request")
         if not re.match('AGILENT TECHNOLOGIES,DSO6054A',idn) and not re.match('AGILENT TECHNOLOGIES,DSO\-X 3034A',idn):
             raise RuntimeError("Bad indentification : ", idn)
-        
+
 
     def read_waveform(self, channel, samples=1000):
-        """ reads waveform data from oscilliscope using <dev> interface.  
-        Wavefrom should already be captured on oscilicoe (single).  
+        """ reads waveform data from oscilliscope using <dev> interface.
+        Wavefrom should already be captured on oscilicoe (single).
         <channel> should be integer '1-4'
-        returns tuple (x_inc, [data]), where x_inc is timestep of each data sample, and 
+        returns tuple (x_inc, [data]), where x_inc is timestep of each data sample, and
         data is array of floating point values
+
+        Currently doesn't work if acquisition mode is "Peak Detect"
         """
         w = self.dev.write
-        r = self.dev.read    
+        r = self.dev.read
 
         ch_set = 'CHAN%d'%channel
         w(":waveform:source " + ch_set)
@@ -43,17 +46,19 @@ class DSO6054A:
 
         if int(points) != samples:
             msg = "Wrong number of samples returned : got %s, expected %d" % (points,samples)
-            print msg
+            print(msg)
             samples = int(points)
             #raise RuntimeError(msg)
 
         data = r(':waveform:data?')
-        
+
         hdr = data[0:2]
         size = int(data[2:10])
         data = data[10:]
         if hdr != "#8":
             raise RuntimeError("Unexpected data header" + hdr)
+        if len(data) >= size*2:
+            raise RuntimeError("Recv'ed data much bigger that expected size, make sure aquire mode is 'Normal'")
         if size != len(data)-1:
             raise RuntimeError("Data length mismatch : size=%d, len(data)=%d" % (size, len(data)))
 
@@ -62,10 +67,3 @@ class DSO6054A:
             raise RuntimeError("Data sample count mismatch : got %d, expected %d", len(data), points)
 
         return (float(xinc), data)
-
-
-    
-    
-    
-
-    
