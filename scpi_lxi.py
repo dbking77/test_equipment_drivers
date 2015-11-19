@@ -76,15 +76,20 @@ def usage(progname):
     print __doc__ % vars()
 
 
-# Interface to LXI device. 
+# Interface to LXI device.
 class LXIDevice:
-    def __init__(self, address):
+    def __init__(self, address, port = None):
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            port = 5025
-            sock.connect((address, port))
-        except socket.error:
-            raise RuntimeError("Error making connection to LXI device with address '%s'" %  address)
+
+            if port is not None:
+                self.port = port
+            else:
+                self.port = 5025
+            #port = 9221 #5025
+            sock.connect((address, self.port))
+        except socket.error as ex:
+            raise RuntimeError("Error making connection to LXI device with address '%s'" %  address + " " + str(ex))
         self._sock = sock
         self._timeout = 20.5
         msg = self._flush()
@@ -92,7 +97,7 @@ class LXIDevice:
             print "Warning, flushed : ", msg
 
     def settimeout(self, timeout):
-        """ Set read timeout in seconds """ 
+        """ Set read timeout in seconds """
         self._sock.settimeout(timeout)
         self._timeout = timeout
 
@@ -130,7 +135,7 @@ class LXIDevice:
 
     def write(self, line):
         self._sock.sendall(line+'\n')
-        
+
 
 
 def main(argv):
@@ -155,7 +160,7 @@ def main(argv):
 
     address = argv[0]
     print "Connecting to LXI device using network address %s" % address
-    dev = LXIDevice(address) 
+    dev = LXIDevice(address, port = 9221)
 
     line = raw_input("> ")
     while True:
