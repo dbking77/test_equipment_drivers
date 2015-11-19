@@ -57,39 +57,37 @@ class xpf60p_supply:
 
     def setVoltage(self, voltage):
         self._device.write("V1 " + str(voltage))
+        if self.getVoltageSetting() != float(voltage):
+            raise RuntimeError("Setting power supply voltage did not work")
 
-        if self.getVoltage() == float(voltage):
-            return True
-        else:
-            return False
-
-    def getVoltage(self):
+    def getVoltageSetting(self):
+        """ Get voltage set-point """
         V = self._device.read("V1?")
         return float(V.split(' ')[1])
 
-    def setCurrentLimit(self, current):
-        self._device.write("I1 " + str(current))
+    def getVoltage(self):
+        """ Read output voltage from scope
+        output voltage might be lower than setting because of current limiting
+        """
+        V = self._device.read("V1O?")
+        return float(V.split('V')[0])
 
-        if self.getCurrentLimit() == float(current):
-            return True
-        else:
-            return False
+    def setCurrentLimit(self, current):
+        """ Get current limit setting as opposed to output voltage
+        which might be different because of current limit"""
+        self._device.write("I1 " + str(current))
+        if self.getCurrentLimit() != float(current):
+            raise RuntimeError("Setting power supply current limit did not work")
 
     def getCurrentLimit(self):
         I = self._device.read("I1?")
         return float(I.split(' ')[1])
 
     def setOutput(self, state):
-
-        if state == 1 or state == 0:
-            self._device.write("OP1 " + str(state))
-        else:
-            return "Invalid Output State Input"
-
-        if self.getOutput() == int(state):
-            return True
-        else:
-            return False
+        """ Sets output state, should be true for on and false for disbled """
+        self._device.write("OP1 " + str('1' if state else '0'))
+        if self.getOutput() != bool(state):
+            raise RuntimeError("Setting power supply output state did not work")
 
     def getOutput(self):
         return int(self._device.read("OP1?"))
@@ -132,4 +130,3 @@ def main(argv):
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
-
