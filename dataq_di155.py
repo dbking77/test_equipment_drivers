@@ -265,7 +265,7 @@ class DataqDi155:
             self.read_thread_should_stop = True
             self.read_thread.join()
 
-    def wait_for_next_sample():
+    def wait_for_next_sample(self):
         """ Waits for next analog sample to be received """
         with self.lock:
             sample_count = self.sample_count
