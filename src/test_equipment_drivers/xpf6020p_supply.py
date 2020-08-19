@@ -37,7 +37,7 @@
 ##\author Camilo F. Buscaron
 ##\
 
-from scpi_lxi import LXIDevice
+from test_equipment_drivers.scpi_lxi import LXIDevice
 
 import sys
 

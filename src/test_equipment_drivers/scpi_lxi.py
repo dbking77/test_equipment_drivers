@@ -73,7 +73,7 @@ import re
 import time
 
 def usage(progname):
-    print __doc__ % vars()
+    print(__doc__ % vars())
 
 
 # Interface to LXI device.
@@ -94,7 +94,7 @@ class LXIDevice:
         self._timeout = 20.5
         msg = self._flush()
         if msg:
-            print "Warning, flushed : ", msg
+            print("Warning, flushed : ", msg)
 
     def settimeout(self, timeout):
         """ Set read timeout in seconds """
@@ -120,12 +120,12 @@ class LXIDevice:
         msg = ""
         try:
             while True:
-                msg += self._sock.recv(500)
+                msg += self._sock.recv(500).decode()
                 end = msg.find("\n")
                 if end == (len(msg)-1):
                     return msg
                 elif end != -1:
-                    print "Warning, dropping %d byte tail of message. Tail='%s'"%(len(msg)-end, msg[end:])
+                    print("Warning, dropping %d byte tail of message. Tail='%s'"%(len(msg)-end, msg[end:]))
                     return msg[0:end-1]
         except socket.timeout:
             if len(msg) > 0:
@@ -134,7 +134,7 @@ class LXIDevice:
                 return None
 
     def write(self, line):
-        self._sock.sendall(line+'\n')
+        self._sock.sendall((line+'\n').encode("ascii"))
 
 
 
@@ -151,7 +151,7 @@ def main(argv):
             usage(progname)
             return 0
         else :
-            print "Internal error : opt = ", opt
+            print("Internal error : opt = ", opt)
             return 2
 
     if len(argv) != 1:
@@ -159,20 +159,20 @@ def main(argv):
         return 1
 
     address = argv[0]
-    print "Connecting to LXI device using network address %s" % address
+    print("Connecting to LXI device using network address %s" % address)
     dev = LXIDevice(address, port = 9221)
 
-    line = raw_input("> ")
+    line = input("> ")
     while True:
         if line:
             dev.write(line)
         else:
             result = dev.read()
             if result != None:
-                print result
+                print(result)
             else:
-                print '<<< NO RESPONSE >>>'
-        line = raw_input("> ")
+                print('<<< NO RESPONSE >>>')
+        line = input("> ")
 
 
 if __name__ == '__main__':
